@@ -1,0 +1,64 @@
+package com.example.demo;
+
+import org.springframework.stereotype.Controller;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.*;
+
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
+
+@Controller
+public class Servidor {
+
+    @GetMapping("/")
+    public String mostrarFormularioEntrada() {
+        return "formularioEntrada";  
+    }
+
+    @PostMapping("/procesar")
+    public String recibirDatos(
+            @RequestParam(name = "nombre", required = false) String nombre,
+            @RequestParam(name = "apellido", required = false) String apellido,
+            @RequestParam(name = "fechaNacimiento", required = false) String fechaNacimiento,
+            Model modelo) {
+
+        String nom = (nombre == null || nombre.isBlank()) ? "NN" : nombre;
+        String apell = (apellido == null) ? "" : apellido;
+
+        LocalDate fecha;
+        if (fechaNacimiento == null || fechaNacimiento.isBlank()) {
+            fecha = LocalDate.of(1900, 1, 1);
+        } else {
+            fecha = LocalDate.parse(fechaNacimiento, DateTimeFormatter.ISO_DATE);
+        }
+
+        String codigoGenerado = crearCodigo(nom, apell, fecha);
+
+        modelo.addAttribute("codigoGenerado", codigoGenerado);  
+        return "vistaCodigo";  
+    }
+
+    private String crearCodigo(String nombre, String apellido, LocalDate fecha) {
+        String inicioNom = nombre.length() >= 2 ? nombre.substring(0, 2).toUpperCase() : nombre.toUpperCase();
+        String inicioApell = apellido.isEmpty() ? "Z" : apellido.substring(0, 1).toUpperCase();
+
+        String anio = String.valueOf(fecha.getYear());
+        String mes = String.format("%02d", fecha.getMonthValue());
+        String dia = String.format("%02d", fecha.getDayOfMonth());
+
+        StringBuilder codigo = new StringBuilder();
+        codigo.append(inicioApell.charAt(0));         
+        codigo.append(inicioNom.charAt(0));           
+        codigo.append(anio.charAt(3));              
+        codigo.append(dia.charAt(0));                 
+        codigo.append(inicioNom.length() > 1 ? inicioNom.charAt(1) : 'Y'); 
+        codigo.append(mes.charAt(1));                  
+        codigo.append(anio.charAt(0));                 
+        codigo.append(anio.charAt(2));                 
+        codigo.append(mes.charAt(0));                   
+        codigo.append(inicioApell.length() > 0 ? 'X' : 'W'); // X o W (símbolo para variación)
+        codigo.append(dia.charAt(1));                    
+
+        return codigo.toString();
+    }
+}
